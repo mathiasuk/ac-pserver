@@ -80,13 +80,22 @@ class BinaryWriter(object):
 	def __init__(self):
 		self.buff = ''
 
-	def write_byte(self, byte):
-		self.buff += struct.pack('B', byte)
+	def write_byte(self, data):
+		self.buff += struct.pack('B', data)
+
+	def write_uint16(self, data):
+		self.buff += struct.pack('H', data)
 
 
 class Pserver(object):
 	def __init__(self):
 		self.br = None
+
+	def _send(self, buff):
+		'''
+		Send buffer to server
+		'''
+		self.sock.sendto(buff, (UDP_IP, UDP_SEND_PORT))
 
 	def _get_car_info(self, car_id):
 		bw = BinaryWriter()
@@ -94,7 +103,14 @@ class Pserver(object):
 		bw.write_byte(proto.ACSP_GET_CAR_INFO)
 		bw.write_byte(car_id)
 
-		self.sock.sendto(bw.buff, (UDP_IP, UDP_SEND_PORT))
+		self._send(bw.buff)
+
+	def _enable_realtime_report(self):
+		bw = BinaryWriter()
+		bw.write_byte(proto.ACSP_REALTIMEPOS_INTERVAL)
+		bw.write_uint16(1000)  # Interval in ms (1Hz)
+
+		self._send(bw.buff)
 
 	def _handle_car_info(self):
 		car_id = self.br.read_byte()
