@@ -3,11 +3,9 @@ import struct
 
 import proto
 
-UDP_IP = ""
+UDP_IP = "127.0.0.1"
 UDP_PORT = 12000
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind(("", UDP_PORT))
+UDP_SEND_PORT = 11000
 
 
 class Vector3f(object):
@@ -26,13 +24,13 @@ class BinaryReader(object):
 		self.offset = 0
 
 	def read_byte(self):
-		fmt = 'b'
+		fmt = 'B'
 		r = struct.unpack_from(fmt, self.data, self.offset)[0]
 		self.offset += struct.calcsize(fmt)
 		return r
 
 	def read_bytes(self, length):
-		fmt = '%db' % length
+		fmt = '%dB' % length
 		r = struct.unpack_from(fmt, self.data, self.offset)
 		self.offset += struct.calcsize(fmt)
 		return r
@@ -78,13 +76,29 @@ class BinaryReader(object):
 		v.z = self.read_single()
 
 
+class BinaryWriter(object):
+	def __init__(self):
+		self.buff = ''
+
+	def write_byte(self, byte):
+		self.buff += struct.pack('B', byte)
+
+
 class Pserver(object):
 	def __init__(self):
 		self.br = None
 
+	def _get_car_info(self, car_id):
+		bw = BinaryWriter()
+
+		bw.write_byte(proto.ACSP_GET_CAR_INFO)
+		bw.write_byte(car_id)
+
+		self.sock.sendto(bw.buff, (UDP_IP, UDP_SEND_PORT))
+
 	def _handle_car_info(self):
 		car_id = self.br.read_byte()
-		is_connected = self.br.readbyte() != 0
+		is_connected = self.br.read_byte() != 0
 		car_model = self.br.read_utf_string()
 		car_skin = self.br.read_utf_string()
 		driver_name = self.br.read_utf_string()
@@ -226,8 +240,12 @@ class Pserver(object):
 		print u'Protocol version: %d' % protocol_version
 
 	def run(self):
+
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.sock.bind(("", UDP_PORT))
+
 		while True:
-			sdata, _addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
+			sdata, _addr = self.sock.recvfrom(1024)  # buffer size is 1024 bytes
 			self.br = BinaryReader(sdata)
 			packet_id = self.br.read_byte()
 
@@ -275,6 +293,6 @@ class Pserver(object):
 			else:
 				print u'** UNKOWNN PACKET ID: %d' % packet_id
 
-
-p = Pserver()
-p.run()
+if __name__ == '__main__':
+	p = Pserver()
+	p.run()
