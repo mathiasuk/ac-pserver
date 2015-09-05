@@ -49,8 +49,8 @@ class BinaryReader(object):
 
 	def read_string(self):
 		length = self.read_byte()
-		byte_str = self.read_bytes(length)
-		return u''.join([ unichr(x) for x in byte_str])
+		bytes_str = self.read_bytes(length)
+		return u''.join([chr(x) for x in bytes_str])
 
 	def read_uint16(self):
 		fmt = 'H'
@@ -66,8 +66,8 @@ class BinaryReader(object):
 
 	def read_utf_string(self):
 		length = self.read_byte()
-		byte_str = self.read_bytes(length * 4)
-		return u''.join([ unichr(x) for x in byte_str]).decode('utf-32')
+		bytes_str = self.read_bytes(length * 4)
+		return ''.join([chr(x) for x in bytes_str]).decode('utf-32')
 
 	def read_vector_3f(self):
 		v = Vector3f()
@@ -83,8 +83,19 @@ class BinaryWriter(object):
 	def write_byte(self, data):
 		self.buff += struct.pack('B', data)
 
+	def write_bytes(self, data, length):
+		self.buff += struct.pack('%dB' % length, *data)
+
 	def write_uint16(self, data):
 		self.buff += struct.pack('H', data)
+
+	def write_utf_string(self, data):
+		utf32_str = data.encode('utf-32')
+		self.write_byte(len(data))
+
+		bytes_length = len(utf32_str)
+		bytes_str = [ord(x) for x in utf32_str]
+		self.write_bytes(bytes_str, bytes_length)
 
 
 class Pserver(object):
@@ -259,6 +270,8 @@ class Pserver(object):
 
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.sock.bind(("", UDP_PORT))
+
+		print u'Waiting for data from %s:%s' % (UDP_IP, UDP_PORT)
 
 		while True:
 			sdata, _addr = self.sock.recvfrom(1024)  # buffer size is 1024 bytes
