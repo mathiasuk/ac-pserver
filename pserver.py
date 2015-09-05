@@ -60,6 +60,12 @@ class BinaryReader(object):
 		self.offset += struct.calcsize(fmt)
 		return r
 
+	def read_uint32(self):
+		fmt = 'I'
+		r = struct.unpack_from(fmt, self.data, self.offset)[0]
+		self.offset += struct.calcsize(fmt)
+		return r
+
 	def read_utf_string(self):
 		length = self.read_byte()
 		byte_str = self.read_bytes(length * 4)
@@ -76,10 +82,33 @@ class Pserver(object):
 	def __init__(self):
 		self.br = None
 
+	def _handle_car_info(self):
+		car_id = self.br.read_byte()
+		is_connected = self.br.readbyte() != 0
+		car_model = self.br.read_utf_string()
+		car_skin = self.br.read_utf_string()
+		driver_name = self.br.read_utf_string()
+		driver_team = self.br.read_utf_string()
+		driver_guid = self.br.read_utf_string()
+
+		print u'Car info: %d %s (%s), Driver: %s, Team: %s, GUID: %s, Connected: %s' % \
+			(car_id, car_model, car_skin, driver_name, driver_team, driver_guid, is_connected)
+		# TODO: implement example testSetSessionInfo()
+
+	def _handle_car_update(self):
+		car_id = self.br.read_byte()
+		pos = self.br.read_vector_3f()
+		velocity = self.br.read_vector_3f()
+		gear = self.br.read_byte()
+		engine_rpm = self.br.read_uint16()
+		normalized_spline_pos = self.br.read_single()
+		print u'Car update: %d, Position: %s, Velocity: %s, Gear: %d, RPM: %d, NSP: %f' % \
+			(car_id, pos, velocity, gear, engine_rpm, normalized_spline_pos)
+
 	def _handle_chat(self):
 		car_id = self.br.read_byte()
 		msg = self.br.read_utf_string()
-		print 'Chat from car %d: "%s"' % (car_id, msg)
+		print u'Chat from car %d: "%s"' % (car_id, msg)
 
 	def _handle_client_event(self):
 		event_type = self.br.read_byte()
@@ -96,24 +125,68 @@ class Pserver(object):
 		rel_pos = self.br.read_vector_3f()
 
 		if event_type == proto.ACSP_CE_COLLISION_WITH_CAR:
-			print 'Collision with car, car: %d, other car: %d, Impact speed: %f, World position: %s, Relative position: %s' % \
+			print u'Collision with car, car: %d, other car: %d, Impact speed: %f, World position: %s, Relative position: %s' % \
 				(car_id, other_car_id, impact_speed, world_pos, rel_pos)
 		elif event_type == proto.ACSP_CE_COLLISION_WITH_ENV:
-			pass
+			print u'Collision with environment, car: %d, Impact speed: %f, World position: %s, Relative position: %s' % \
+				(car_id, impact_speed, world_pos, rel_pos)
 
 	def _handle_client_loaded(self):
 		car_id = self.br.read_byte()
-		print 'Client loaded: %d' % car_id
+		print u'Client loaded: %d' % car_id
+
+	def _handle_connection_closed(self):
+		driver_name = self.br.read_utf_string()
+		driver_guid = self.br.read_utf_string()
+		car_id = self.br.read_byte()
+		car_model = self.br.read_utf_string()
+		car_skin = self.br.read_utf_string()
+
+		print u'Connection closed'
+		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
+		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
 
 	def _handle_end_session(self):
 		filename = self.br.read_utf_string()
-		print 'Report JSON available at: %s' % filename
+		print u'Report JSON available at: %s' % filename
 
 	def _handle_error(self):
-		print 'ERROR: %s' % self.br.read_utf_string()
+		print u'ERROR: %s' % self.br.read_utf_string()
+
+	def _handle_lap_completed(self):
+		car_id = self.br.read_byte()
+		laptime = self.br.read_uint32()
+		cuts = self.br.read_byte()
+
+		print u'Lap completed'
+		print u'Car: %d, Laptime: %d, Cuts: %d' % (car_id, laptime, cuts)
+
+		cars_count = self.br.read_byte()
+
+		for i in range(1, cars_count + 1):
+			rcar_id = self.br.read_byte()
+			rtime = self.br.read_uint32()
+			rlaps = self.br.read_byte()
+			print u'%d: Car ID: %d, Time: %d, Laps: %d' % \
+				(i, rcar_id, rtime, rlaps)
+
+		grip_level = self.br.read_byte()
+		print u'Grip level: %d' % grip_level
+
+	def _handle_new_connection(self):
+		driver_name = self.br.read_utf_string()
+		driver_guid = self.br.read_utf_string()
+		car_id = self.br.read_byte()
+		car_model = self.br.read_utf_string()
+		car_skin = self.br.read_utf_string()
+
+		print u'New connection'
+		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
+		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
+		# TODO: implement testGetCarInfo(client, car_id);
 
 	def _handle_new_session(self):
-		print 'New session started'
+		print u'New session started'
 
 	def _handle_session_info(self):
 		protocol_version = self.br.read_byte()
@@ -133,32 +206,30 @@ class Pserver(object):
 		weather_graphics = self.br.read_string()
 		elapsed_ms = self.br.read_int32()
 
-		print 'Session Info'
-		print 'Protocol version: %d' % protocol_version
-		print 'Session index: %d/%d, Current session: %d' % \
+		print u'Session Info'
+		print u'Protocol version: %d' % protocol_version
+		print u'Session index: %d/%d, Current session: %d' % \
 			(session_index, session_count, current_session_index)
-		print 'Server name: %s' % server_name
-		print 'Track: %s (%s)' % (track, track_config)
-		print 'Name: %s' % name
-		print 'Type: %d' % typ
-		print 'Time: %d' % time
-		print 'Laps: %d' % laps
-		print 'Wait time: %d' % wait_time
-		print 'Weather: %s, Ambient temp: %d, Road temp: %d' % \
+		print u'Server name: %s' % server_name
+		print u'Track: %s (%s)' % (track, track_config)
+		print u'Name: %s' % name
+		print u'Type: %d' % typ
+		print u'Time: %d' % time
+		print u'Laps: %d' % laps
+		print u'Wait time: %d' % wait_time
+		print u'Weather: %s, Ambient temp: %d, Road temp: %d' % \
 			(weather_graphics, ambient_temp, road_temp)
-		print 'Elapsed ms: %d' % elapsed_ms
+		print u'Elapsed ms: %d' % elapsed_ms
 
 	def _handle_version(self):
 		protocol_version = self.br.read_byte()
-		print 'Protocol version: %d' % protocol_version
+		print u'Protocol version: %d' % protocol_version
 
 	def run(self):
 		while True:
 			sdata, _addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
 			self.br = BinaryReader(sdata)
 			packet_id = self.br.read_byte()
-
-			print 'DEBUG: packet_id: %s' % packet_id
 
 			if packet_id == proto.ACSP_ERROR:
 				self._handle_error()
@@ -191,6 +262,18 @@ class Pserver(object):
 				self._handle_end_session()
 			elif packet_id == proto.ACSP_CLIENT_EVENT:
 				self._handle_client_event()
+			elif packet_id == proto.ACSP_CAR_INFO:
+				self._handle_car_info()
+			elif packet_id == proto.ACSP_CAR_UPDATE:
+				self._handle_car_update()
+			elif packet_id == proto.ACSP_NEW_CONNECTION:
+				self._handle_new_connection()
+			elif packet_id == proto.ACSP_CONNECTION_CLOSED:
+				self._handle_connection_closed()
+			elif packet_id == proto.ACSP_LAP_COMPLETED:
+				self._handle_lap_completed()
+			else:
+				print u'** UNKOWNN PACKET ID: %d' % packet_id
 
 
 p = Pserver()
