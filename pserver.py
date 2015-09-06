@@ -103,20 +103,13 @@ class Pserver(object):
 	def __init__(self):
 		self.br = None
 
-	def _get_car_info(self, car_id):
-		bw = BinaryWriter()
+	def _send(self, buff):
+		'''
+		Send buffer to server
+		'''
+		self.sock.sendto(buff, (UDP_IP, UDP_SEND_PORT))
 
-		bw.write_byte(proto.ACSP_GET_CAR_INFO)
-		bw.write_byte(car_id)
-
-		self._send(bw.buff)
-
-	def _enable_realtime_report(self):
-		bw = BinaryWriter()
-		bw.write_byte(proto.ACSP_REALTIMEPOS_INTERVAL)
-		bw.write_uint16(1000)  # Interval in ms (1Hz)
-
-		self._send(bw.buff)
+	# The methods below are to handle data received from the server
 
 	def _handle_car_info(self):
 		car_id = self.br.read_byte()
@@ -273,11 +266,30 @@ class Pserver(object):
 		print u'===='
 		print u'Protocol version: %d' % protocol_version
 
-	def _send(self, buff):
-		'''
-		Send buffer to server
-		'''
-		self.sock.sendto(buff, (UDP_IP, UDP_SEND_PORT))
+	# The methods below are to send data to the server
+
+	def _broadcast_chat(self, message):
+		bw = BinaryWriter()
+
+		bw.write_byte(proto.ACSP_BROADCAST_CHAT)
+		bw.write_utf_string(message)
+
+		self._send(bw.buff)
+
+	def _get_car_info(self, car_id):
+		bw = BinaryWriter()
+
+		bw.write_byte(proto.ACSP_GET_CAR_INFO)
+		bw.write_byte(car_id)
+
+		self._send(bw.buff)
+
+	def _enable_realtime_report(self):
+		bw = BinaryWriter()
+		bw.write_byte(proto.ACSP_REALTIMEPOS_INTERVAL)
+		bw.write_uint16(1000)  # Interval in ms (1Hz)
+
+		self._send(bw.buff)
 
 	def _send_chat(self, car_id, message):
 		bw = BinaryWriter()
