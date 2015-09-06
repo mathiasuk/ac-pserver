@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import socket
 import struct
 
@@ -101,12 +102,6 @@ class BinaryWriter(object):
 class Pserver(object):
 	def __init__(self):
 		self.br = None
-
-	def _send(self, buff):
-		'''
-		Send buffer to server
-		'''
-		self.sock.sendto(buff, (UDP_IP, UDP_SEND_PORT))
 
 	def _get_car_info(self, car_id):
 		bw = BinaryWriter()
@@ -234,7 +229,6 @@ class Pserver(object):
 		print u'New connection'
 		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
 		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
-		# TODO: implement testGetCarInfo(client, car_id);
 
 	def _handle_new_session(self):
 		print u'===='
@@ -279,6 +273,21 @@ class Pserver(object):
 		print u'===='
 		print u'Protocol version: %d' % protocol_version
 
+	def _send(self, buff):
+		'''
+		Send buffer to server
+		'''
+		self.sock.sendto(buff, (UDP_IP, UDP_SEND_PORT))
+
+	def _send_chat(self, car_id, message):
+		bw = BinaryWriter()
+
+		bw.write_byte(proto.ACSP_SEND_CHAT)
+		bw.write_byte(car_id)
+		bw.write_utf_string(message)
+
+		self._send(bw.buff)
+
 	def run(self):
 
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -302,15 +311,10 @@ class Pserver(object):
 			elif packet_id == proto.ACSP_NEW_SESSION:
 				self._handle_new_session()
 				self._handle_session_info()
-				# TODO
-				# if (packet_id == ACSProtocol.ACSP_NEW_SESSION) {
-				# // UNCOMMENT to enable realtime position reports
-				# enableRealtimeReport(client);
 
-				# // TEST ACSP_GET_CAR_INFO
-				# testGetCarInfo(client, 2);
+				# Uncomment to enable realtime position reports
+				# self._enable_realtime_report()
 
-				# sendChat(client, 0, "CIAO BELLO!");
 				# broadcastChat(client, "E' arrivat' 'o pirit'");
 
 				# // Test Kick User, bad index, it will also trigger an error
