@@ -180,8 +180,8 @@ class Pserver(object):
 		driver_name = self.br.read_utf_string()
 		driver_guid = self.br.read_utf_string()
 		car_id = self.br.read_byte()
-		car_model = self.br.read_utf_string()
-		car_skin = self.br.read_utf_string()
+		car_model = self.br.read_string()
+		car_skin = self.br.read_string()
 
 		print u'Connection closed'
 		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
@@ -218,8 +218,8 @@ class Pserver(object):
 		driver_name = self.br.read_utf_string()
 		driver_guid = self.br.read_utf_string()
 		car_id = self.br.read_byte()
-		car_model = self.br.read_utf_string()
-		car_skin = self.br.read_utf_string()
+		car_model = self.br.read_string()
+		car_skin = self.br.read_string()
 
 		print u'New connection'
 		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
