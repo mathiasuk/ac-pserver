@@ -132,6 +132,7 @@ class Pserver(object):
 		driver_team = self.br.read_utf_string()
 		driver_guid = self.br.read_utf_string()
 
+		print u'===='
 		print u'Car info: %d %s (%s), Driver: %s, Team: %s, GUID: %s, Connected: %s' % \
 			(car_id, car_model, car_skin, driver_name, driver_team, driver_guid, is_connected)
 		# TODO: implement example testSetSessionInfo()
@@ -143,12 +144,14 @@ class Pserver(object):
 		gear = self.br.read_byte()
 		engine_rpm = self.br.read_uint16()
 		normalized_spline_pos = self.br.read_single()
+		print u'===='
 		print u'Car update: %d, Position: %s, Velocity: %s, Gear: %d, RPM: %d, NSP: %f' % \
 			(car_id, pos, velocity, gear, engine_rpm, normalized_spline_pos)
 
 	def _handle_chat(self):
 		car_id = self.br.read_byte()
 		msg = self.br.read_utf_string()
+		print u'===='
 		print u'Chat from car %d: "%s"' % (car_id, msg)
 
 	def _handle_client_event(self):
@@ -165,6 +168,7 @@ class Pserver(object):
 		world_pos = self.br.read_vector_3f()
 		rel_pos = self.br.read_vector_3f()
 
+		print u'===='
 		if event_type == proto.ACSP_CE_COLLISION_WITH_CAR:
 			print u'Collision with car, car: %d, other car: %d, Impact speed: %f, World position: %s, Relative position: %s' % \
 				(car_id, other_car_id, impact_speed, world_pos, rel_pos)
@@ -174,6 +178,7 @@ class Pserver(object):
 
 	def _handle_client_loaded(self):
 		car_id = self.br.read_byte()
+		print u'===='
 		print u'Client loaded: %d' % car_id
 
 	def _handle_connection_closed(self):
@@ -183,15 +188,18 @@ class Pserver(object):
 		car_model = self.br.read_string()
 		car_skin = self.br.read_string()
 
+		print u'===='
 		print u'Connection closed'
 		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
 		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
 
 	def _handle_end_session(self):
 		filename = self.br.read_utf_string()
+		print u'===='
 		print u'Report JSON available at: %s' % filename
 
 	def _handle_error(self):
+		print u'===='
 		print u'ERROR: %s' % self.br.read_utf_string()
 
 	def _handle_lap_completed(self):
@@ -199,6 +207,7 @@ class Pserver(object):
 		laptime = self.br.read_uint32()
 		cuts = self.br.read_byte()
 
+		print u'===='
 		print u'Lap completed'
 		print u'Car: %d, Laptime: %d, Cuts: %d' % (car_id, laptime, cuts)
 
@@ -221,12 +230,14 @@ class Pserver(object):
 		car_model = self.br.read_string()
 		car_skin = self.br.read_string()
 
+		print u'===='
 		print u'New connection'
 		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
 		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
 		# TODO: implement testGetCarInfo(client, car_id);
 
 	def _handle_new_session(self):
+		print u'===='
 		print u'New session started'
 
 	def _handle_session_info(self):
@@ -247,6 +258,7 @@ class Pserver(object):
 		weather_graphics = self.br.read_string()
 		elapsed_ms = self.br.read_int32()
 
+		print u'===='
 		print u'Session Info'
 		print u'Protocol version: %d' % protocol_version
 		print u'Session index: %d/%d, Current session: %d' % \
@@ -264,6 +276,7 @@ class Pserver(object):
 
 	def _handle_version(self):
 		protocol_version = self.br.read_byte()
+		print u'===='
 		print u'Protocol version: %d' % protocol_version
 
 	def run(self):
