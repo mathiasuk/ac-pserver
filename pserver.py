@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+
+import codecs
 import socket
 import struct
 
 import proto
+
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 12000
@@ -16,7 +19,7 @@ class Vector3f(object):
 		self.z = 0
 
 	def __unicode__(self):
-		return u'[%f, %f, %f]' % (self.x, self.y, self.z)
+		return '[%f, %f, %f]' % (self.x, self.y, self.z)
 
 
 class BinaryReader(object):
@@ -51,7 +54,7 @@ class BinaryReader(object):
 	def read_string(self):
 		length = self.read_byte()
 		bytes_str = self.read_bytes(length)
-		return u''.join([chr(x) for x in bytes_str])
+		return ''.join([chr(x) for x in bytes_str])
 
 	def read_uint16(self):
 		fmt = 'H'
@@ -68,7 +71,8 @@ class BinaryReader(object):
 	def read_utf_string(self):
 		length = self.read_byte()
 		bytes_str = self.read_bytes(length * 4)
-		return ''.join([chr(x) for x in bytes_str]).decode('utf-32')
+
+		return bytes(bytes_str).decode('utf-32')
 
 	def read_vector_3f(self):
 		v = Vector3f()
@@ -79,7 +83,7 @@ class BinaryReader(object):
 
 class BinaryWriter(object):
 	def __init__(self):
-		self.buff = ''
+		self.buff = b''
 
 	def write_byte(self, data):
 		self.buff += struct.pack('B', data)
@@ -91,12 +95,13 @@ class BinaryWriter(object):
 		self.buff += struct.pack('H', data)
 
 	def write_utf_string(self, data):
-		utf32_str = data.encode('utf-32')
 		self.write_byte(len(data))
 
-		bytes_length = len(utf32_str)
-		bytes_str = [ord(x) for x in utf32_str]
-		self.write_bytes(bytes_str, bytes_length)
+		bytes_str = data.encode('utf-32')
+		if bytes_str.startswith(codecs.BOM_UTF32):
+			# Remove the BOM
+			bytes_str = bytes_str[len(codecs.BOM_UTF32):]
+		self.write_bytes(bytes_str, len(bytes_str))
 
 
 class Pserver(object):
@@ -120,9 +125,9 @@ class Pserver(object):
 		driver_team = self.br.read_utf_string()
 		driver_guid = self.br.read_utf_string()
 
-		print u'===='
-		print u'Car info: %d %s (%s), Driver: %s, Team: %s, GUID: %s, Connected: %s' % \
-			(car_id, car_model, car_skin, driver_name, driver_team, driver_guid, is_connected)
+		print('====')
+		print('Car info: %d %s (%s), Driver: %s, Team: %s, GUID: %s, Connected: %s' %
+			(car_id, car_model, car_skin, driver_name, driver_team, driver_guid, is_connected))
 		# TODO: implement example testSetSessionInfo()
 
 	def _handle_car_update(self):
@@ -132,15 +137,15 @@ class Pserver(object):
 		gear = self.br.read_byte()
 		engine_rpm = self.br.read_uint16()
 		normalized_spline_pos = self.br.read_single()
-		print u'===='
-		print u'Car update: %d, Position: %s, Velocity: %s, Gear: %d, RPM: %d, NSP: %f' % \
-			(car_id, pos, velocity, gear, engine_rpm, normalized_spline_pos)
+		print('====')
+		print('Car update: %d, Position: %s, Velocity: %s, Gear: %d, RPM: %d, NSP: %f' %
+			(car_id, pos, velocity, gear, engine_rpm, normalized_spline_pos))
 
 	def _handle_chat(self):
 		car_id = self.br.read_byte()
 		msg = self.br.read_utf_string()
-		print u'===='
-		print u'Chat from car %d: "%s"' % (car_id, msg)
+		print('====')
+		print('Chat from car %d: "%s"' % (car_id, msg))
 
 	def _handle_client_event(self):
 		event_type = self.br.read_byte()
@@ -156,18 +161,18 @@ class Pserver(object):
 		world_pos = self.br.read_vector_3f()
 		rel_pos = self.br.read_vector_3f()
 
-		print u'===='
+		print('====')
 		if event_type == proto.ACSP_CE_COLLISION_WITH_CAR:
-			print u'Collision with car, car: %d, other car: %d, Impact speed: %f, World position: %s, Relative position: %s' % \
-				(car_id, other_car_id, impact_speed, world_pos, rel_pos)
+			print('Collision with car, car: %d, other car: %d, Impact speed: %f, World position: %s, Relative position: %s' %
+				(car_id, other_car_id, impact_speed, world_pos, rel_pos))
 		elif event_type == proto.ACSP_CE_COLLISION_WITH_ENV:
-			print u'Collision with environment, car: %d, Impact speed: %f, World position: %s, Relative position: %s' % \
-				(car_id, impact_speed, world_pos, rel_pos)
+			print('Collision with environment, car: %d, Impact speed: %f, World position: %s, Relative position: %s' %
+				(car_id, impact_speed, world_pos, rel_pos))
 
 	def _handle_client_loaded(self):
 		car_id = self.br.read_byte()
-		print u'===='
-		print u'Client loaded: %d' % car_id
+		print('====')
+		print('Client loaded: %d' % car_id)
 
 	def _handle_connection_closed(self):
 		driver_name = self.br.read_utf_string()
@@ -176,28 +181,28 @@ class Pserver(object):
 		car_model = self.br.read_string()
 		car_skin = self.br.read_string()
 
-		print u'===='
-		print u'Connection closed'
-		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
-		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
+		print('====')
+		print('Connection closed')
+		print('Driver: %s, GUID: %s' % (driver_name, driver_guid))
+		print('Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin))
 
 	def _handle_end_session(self):
 		filename = self.br.read_utf_string()
-		print u'===='
-		print u'Report JSON available at: %s' % filename
+		print('====')
+		print('Report JSON available at: %s' % filename)
 
 	def _handle_error(self):
-		print u'===='
-		print u'ERROR: %s' % self.br.read_utf_string()
+		print('====')
+		print('ERROR: %s' % self.br.read_utf_string())
 
 	def _handle_lap_completed(self):
 		car_id = self.br.read_byte()
 		laptime = self.br.read_uint32()
 		cuts = self.br.read_byte()
 
-		print u'===='
-		print u'Lap completed'
-		print u'Car: %d, Laptime: %d, Cuts: %d' % (car_id, laptime, cuts)
+		print('====')
+		print('Lap completed')
+		print('Car: %d, Laptime: %d, Cuts: %d' % (car_id, laptime, cuts))
 
 		cars_count = self.br.read_byte()
 
@@ -205,11 +210,11 @@ class Pserver(object):
 			rcar_id = self.br.read_byte()
 			rtime = self.br.read_uint32()
 			rlaps = self.br.read_byte()
-			print u'%d: Car ID: %d, Time: %d, Laps: %d' % \
-				(i, rcar_id, rtime, rlaps)
+			print('%d: Car ID: %d, Time: %d, Laps: %d' %
+				(i, rcar_id, rtime, rlaps))
 
 		grip_level = self.br.read_byte()
-		print u'Grip level: %d' % grip_level
+		print('Grip level: %d' % grip_level)
 
 	def _handle_new_connection(self):
 		driver_name = self.br.read_utf_string()
@@ -218,14 +223,14 @@ class Pserver(object):
 		car_model = self.br.read_string()
 		car_skin = self.br.read_string()
 
-		print u'===='
-		print u'New connection'
-		print u'Driver: %s, GUID: %s' % (driver_name, driver_guid)
-		print u'Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin)
+		print('====')
+		print('New connection')
+		print('Driver: %s, GUID: %s' % (driver_name, driver_guid))
+		print('Car: %d, Model: %s, Skin: %s' % (car_id, car_model, car_skin))
 
 	def _handle_new_session(self):
-		print u'===='
-		print u'New session started'
+		print('====')
+		print('New session started')
 
 	def _handle_session_info(self):
 		protocol_version = self.br.read_byte()
@@ -245,26 +250,26 @@ class Pserver(object):
 		weather_graphics = self.br.read_string()
 		elapsed_ms = self.br.read_int32()
 
-		print u'===='
-		print u'Session Info'
-		print u'Protocol version: %d' % protocol_version
-		print u'Session index: %d/%d, Current session: %d' % \
-			(session_index, session_count, current_session_index)
-		print u'Server name: %s' % server_name
-		print u'Track: %s (%s)' % (track, track_config)
-		print u'Name: %s' % name
-		print u'Type: %d' % typ
-		print u'Time: %d' % time
-		print u'Laps: %d' % laps
-		print u'Wait time: %d' % wait_time
-		print u'Weather: %s, Ambient temp: %d, Road temp: %d' % \
-			(weather_graphics, ambient_temp, road_temp)
-		print u'Elapsed ms: %d' % elapsed_ms
+		print('====')
+		print('Session Info')
+		print('Protocol version: %d' % protocol_version)
+		print('Session index: %d/%d, Current session: %d' %
+			(session_index, session_count, current_session_index))
+		print('Server name: %s' % server_name)
+		print('Track: %s (%s)' % (track, track_config))
+		print('Name: %s' % name)
+		print('Type: %d' % typ)
+		print('Time: %d' % time)
+		print('Laps: %d' % laps)
+		print('Wait time: %d' % wait_time)
+		print('Weather: %s, Ambient temp: %d, Road temp: %d' %
+			(weather_graphics, ambient_temp, road_temp))
+		print('Elapsed ms: %d' % elapsed_ms)
 
 	def _handle_version(self):
 		protocol_version = self.br.read_byte()
-		print u'===='
-		print u'Protocol version: %d' % protocol_version
+		print('====')
+		print('Protocol version: %d' % protocol_version)
 
 	# The methods below are to send data to the server
 
@@ -312,7 +317,7 @@ class Pserver(object):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.sock.bind(("", UDP_PORT))
 
-		print u'Waiting for data from %s:%s' % (UDP_IP, UDP_PORT)
+		print('Waiting for data from %s:%s' % (UDP_IP, UDP_PORT))
 
 		while True:
 			sdata, _addr = self.sock.recvfrom(1024)  # buffer size is 1024 bytes
@@ -350,7 +355,7 @@ class Pserver(object):
 			elif packet_id == proto.ACSP_LAP_COMPLETED:
 				self._handle_lap_completed()
 			else:
-				print u'** UNKOWNN PACKET ID: %d' % packet_id
+				print('** UNKOWNN PACKET ID: %d' % packet_id)
 
 if __name__ == '__main__':
 	p = Pserver()
