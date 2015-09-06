@@ -291,6 +291,13 @@ class Pserver(object):
 
 		self._send(bw.buff)
 
+	def _kick(self, car_id):
+		bw = BinaryWriter()
+		bw.write_byte(proto.ACSP_KICK_USER)
+		bw.write_byte(car_id)
+
+		self._send(bw.buff)
+
 	def _send_chat(self, car_id, message):
 		bw = BinaryWriter()
 
@@ -326,12 +333,6 @@ class Pserver(object):
 
 				# Uncomment to enable realtime position reports
 				# self._enable_realtime_report()
-
-				# broadcastChat(client, "E' arrivat' 'o pirit'");
-
-				# // Test Kick User, bad index, it will also trigger an error
-				# testKick(client, 230);
-				# }
 			elif packet_id == proto.ACSP_SESSION_INFO:
 				self._handle_session_info()
 			elif packet_id == proto.ACSP_END_SESSION:
