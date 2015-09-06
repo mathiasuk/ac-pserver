@@ -18,7 +18,7 @@ class Vector3f(object):
 		self.y = 0
 		self.z = 0
 
-	def __unicode__(self):
+	def __str__(self):
 		return '[%f, %f, %f]' % (self.x, self.y, self.z)
 
 
@@ -79,6 +79,8 @@ class BinaryReader(object):
 		v.x = self.read_single()
 		v.y = self.read_single()
 		v.z = self.read_single()
+
+		return v
 
 
 class BinaryWriter(object):
