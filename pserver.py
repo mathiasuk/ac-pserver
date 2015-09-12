@@ -7,7 +7,7 @@ import sys
 
 import proto
 
-if sys.version[0] != 3:
+if sys.version_info[0] != 3:
     print('This program requires Python 3')
     sys.exit(1)
 
