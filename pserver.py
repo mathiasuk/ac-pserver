@@ -123,7 +123,8 @@ class Pserver(object):
         '''
         if protocol_version not in SUPPORTED_PROTOCOLS:
             print('Unsupported protocol version: %d, expecting: %s' %
-                  (protocol_version, ', '.join(SUPPORTED_PROTOCOLS)))
+                  (protocol_version, SUPPORTED_PROTOCOLS))
+            sys.exit(1)
 
     def _send(self, buff):
         '''
