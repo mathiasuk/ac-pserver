@@ -11,6 +11,7 @@ if sys.version_info[0] != 3:
     print('This program requires Python 3')
     sys.exit(1)
 
+SUPPORTED_PROTOCOLS = [2]
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 12000
@@ -114,6 +115,15 @@ class BinaryWriter(object):
 class Pserver(object):
     def __init__(self):
         self.br = None
+
+    def _check_protocol(self, protocol_version):
+        '''
+        Checks that the given procotol version is supported,
+        the program will quit otherwise
+        '''
+        if protocol_version not in SUPPORTED_PROTOCOLS:
+            print('Unsupported protocol version: %d, expecting: %s' %
+                  (protocol_version, ', '.join(SUPPORTED_PROTOCOLS)))
 
     def _send(self, buff):
         '''
@@ -257,6 +267,8 @@ class Pserver(object):
         weather_graphics = self.br.read_string()
         elapsed_ms = self.br.read_int32()
 
+        self._check_protocol(protocol_version)
+
         print('====')
         print('Session Info')
         print('Protocol version: %d' % protocol_version)
@@ -275,6 +287,7 @@ class Pserver(object):
 
     def _handle_version(self):
         protocol_version = self.br.read_byte()
+        self._check_protocol(protocol_version)
         print('====')
         print('Protocol version: %d' % protocol_version)
 
