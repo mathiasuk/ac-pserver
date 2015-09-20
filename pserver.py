@@ -294,6 +294,9 @@ class Pserver(object):
     # The methods below are to send data to the server
 
     def _broadcast_chat(self, message):
+        '''
+        Broadcast message to all cars
+        '''
         bw = BinaryWriter()
 
         bw.write_byte(proto.ACSP_BROADCAST_CHAT)
@@ -302,6 +305,9 @@ class Pserver(object):
         self._send(bw.buff)
 
     def _get_car_info(self, car_id):
+        '''
+        Requests car info for car_id
+        '''
         bw = BinaryWriter()
 
         bw.write_byte(proto.ACSP_GET_CAR_INFO)
@@ -324,6 +330,9 @@ class Pserver(object):
         self._send(bw.buff)
 
     def _send_chat(self, car_id, message):
+        '''
+        Send message to specific car
+        '''
         bw = BinaryWriter()
 
         bw.write_byte(proto.ACSP_SEND_CHAT)
