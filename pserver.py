@@ -11,7 +11,7 @@ if sys.version_info[0] != 3:
     print('This program requires Python 3')
     sys.exit(1)
 
-SUPPORTED_PROTOCOLS = [2]
+SUPPORTED_PROTOCOLS = [2, 4]
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 12000
@@ -294,6 +294,17 @@ class Pserver(object):
 
     # The methods below are to send data to the server
 
+    def _admin_command(self, command):
+        '''
+        Send admin command
+        '''
+        bw = BinaryWriter()
+
+        bw.write_byte(proto.ACSP_ADMIN_COMMAND)
+        bw.write_utf_string(command)
+
+        self._send(bw.buff)
+
     def _broadcast_chat(self, message):
         '''
         Broadcast message to all cars
@@ -327,6 +338,18 @@ class Pserver(object):
         bw = BinaryWriter()
         bw.write_byte(proto.ACSP_KICK_USER)
         bw.write_byte(car_id)
+
+        self._send(bw.buff)
+
+    def _next_session(self):
+        bw = BinaryWriter()
+        bw.write_byte(proto.ACSP_NEXT_SESSION)
+
+        self._send(bw.buff)
+
+    def _restart_session(self):
+        bw = BinaryWriter()
+        bw.write_byte(proto.ACSP_RESTART_SESSION)
 
         self._send(bw.buff)
 
@@ -386,6 +409,7 @@ class Pserver(object):
                 self._handle_lap_completed()
             else:
                 print('** UNKOWNN PACKET ID: %d' % packet_id)
+
 
 if __name__ == '__main__':
     p = Pserver()
